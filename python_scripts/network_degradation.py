@@ -49,7 +49,13 @@ class Distortion(multiprocessing.Process):
     def run_command(command):
         """Executes a shell command using subprocess module."""
         try:
-            process = subprocess.Popen(command, cwd=None, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            process = subprocess.Popen(
+                command,
+                cwd=None,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+            )
         except Exception as inst:
             print("Problem running command : \n   ", str(command))
             return False
@@ -57,13 +63,14 @@ class Distortion(multiprocessing.Process):
         [stdoutdata, stderrdata] = process.communicate(None)
         if process.returncode:
             print(stderrdata)
-            print("Problem running command : \n   ", str(command), " ", process.returncode)
+            print(
+                "Problem running command : \n   ", str(command), " ", process.returncode
+            )
             return False
 
         return True
 
     def run(self) -> None:
-
         # Make sure we are in clean state. Ignore error if there.
         _ = Distortion.run_command(self.clear_cmd)
 
@@ -71,7 +78,10 @@ class Distortion(multiprocessing.Process):
             print("Executing {}".format(run_cmd), flush=True)
             ret_val = Distortion.run_command(run_cmd)
             if not ret_val:
-                print("Could not perform execution of command {}".format(run_cmd), flush=True)
+                print(
+                    "Could not perform execution of command {}".format(run_cmd),
+                    flush=True,
+                )
                 return
 
         end_time = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
@@ -81,7 +91,10 @@ class Distortion(multiprocessing.Process):
         print("Executing {}".format(self.clear_cmd), flush=True)
         ret_val = Distortion.run_command(self.clear_cmd)
         if not ret_val:
-            print("Could not perform execution of command {}".format(self.clear_cmd), flush=True)
+            print(
+                "Could not perform execution of command {}".format(self.clear_cmd),
+                flush=True,
+            )
             return
 
         print("Network Impairment complete.", flush=True)
@@ -96,7 +109,9 @@ def reset_network(interface):
     :rtype: boolean
     """
     if not check_for_interface(interface):
-        raise Exception("Could not find given {} among present interfaces.".format(interface))
+        raise Exception(
+            "Could not find given {} among present interfaces.".format(interface)
+        )
 
     clear_cmd = "sudo tc qdisc del dev {} root".format(interface)
     ret_val = Distortion.run_command(command=clear_cmd)
@@ -107,8 +122,9 @@ def reset_network(interface):
         print("Could not reset the network.")
 
 
-def distort_network(interface, duration, rate_limit, latency, ip=None, port=None,
-                    traffic=''):
+def distort_network(
+    interface, duration, rate_limit, latency, ip=None, port=None, traffic=""
+):
     """
 
     :param interface: Interface on which network impairment will be applied. See ifconfig in
@@ -138,32 +154,36 @@ def distort_network(interface, duration, rate_limit, latency, ip=None, port=None
     """
 
     if not check_for_interface(interface):
-        raise Exception("Could not find given {} among present interfaces.".format(interface))
+        raise Exception(
+            "Could not find given {} among present interfaces.".format(interface)
+        )
 
     if not latency and not rate_limit:
         raise Exception("Could not find latency or  rate_limit.")
 
     if latency:
-        latency_converted = str(latency) + 'ms'
+        latency_converted = str(latency) + "ms"
     else:
         latency_converted = None
 
     if rate_limit:
-        rate_limit_converted = str(rate_limit) + 'Kbit'
+        rate_limit_converted = str(rate_limit) + "Kbit"
     else:
         rate_limit_converted = None
 
     if not (ip and port):
         if rate_limit_converted and latency_converted:
-            run_cmd = "sudo tc qdisc add dev {} root netem" \
-                      " delay {} rate {}".format(interface, latency_converted,
-                                                 rate_limit_converted)
+            run_cmd = "sudo tc qdisc add dev {} root netem" " delay {} rate {}".format(
+                interface, latency_converted, rate_limit_converted
+            )
         elif rate_limit_converted and not latency_converted:
-            run_cmd = "sudo tc qdisc add dev {} root netem" \
-                      " rate {}".format(interface, rate_limit_converted)
+            run_cmd = "sudo tc qdisc add dev {} root netem" " rate {}".format(
+                interface, rate_limit_converted
+            )
         elif not rate_limit_converted and latency_converted:
-            run_cmd = "sudo tc qdisc add dev {} root netem" \
-                      "delay {}".format(interface, latency_converted)
+            run_cmd = "sudo tc qdisc add dev {} root netem" "delay {}".format(
+                interface, latency_converted
+            )
 
         clear_cmd = "sudo tc qdisc del dev {} root".format(interface)
         p = Distortion([run_cmd], clear_cmd, duration)
@@ -171,36 +191,47 @@ def distort_network(interface, duration, rate_limit, latency, ip=None, port=None
         p.start()
 
     else:
-        r1 = "sudo tc qdisc add dev {} root handle 1: prio" \
-             " priomap 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2".format(interface)
+        r1 = (
+            "sudo tc qdisc add dev {} root handle 1: prio"
+            " priomap 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2".format(interface)
+        )
         if latency_converted and rate_limit_converted:
-            r2 = "sudo tc qdisc add dev {} parent 1:1 " \
-                 "handle 10: netem delay {} rate {}".format(interface,
-                                                            latency_converted,
-                                                            rate_limit_converted)
+            r2 = (
+                "sudo tc qdisc add dev {} parent 1:1 "
+                "handle 10: netem delay {} rate {}".format(
+                    interface, latency_converted, rate_limit_converted
+                )
+            )
         elif not latency_converted and rate_limit_converted:
-            r2 = "sudo tc qdisc add dev {} parent 1:1 " \
-                 "handle 10: netem  rate {}".format(interface,
-                                                    rate_limit_converted)
+            r2 = (
+                "sudo tc qdisc add dev {} parent 1:1 "
+                "handle 10: netem  rate {}".format(interface, rate_limit_converted)
+            )
         elif latency_converted and not rate_limit_converted:
-            r2 = "sudo tc qdisc add dev {} parent 1:1 " \
-                 "handle 10: netem delay {} ".format(interface,
-                                                     latency_converted)
+            r2 = (
+                "sudo tc qdisc add dev {} parent 1:1 "
+                "handle 10: netem delay {} ".format(interface, latency_converted)
+            )
 
-        if traffic.lower() == 'outbound':
-            ip_param = 'dst'
-            port_param = 'dport'
+        if traffic.lower() == "outbound":
+            ip_param = "dst"
+            port_param = "dport"
 
         elif traffic.lower() == "inbound":
-            ip_param = 'src'
-            port_param = 'sport'
+            ip_param = "src"
+            port_param = "sport"
         else:
-            raise Exception("For ip and port are given then traffic has to be either inbound or outbound."
-                            " But got other than these two. ")
+            raise Exception(
+                "For ip and port are given then traffic has to be either inbound or outbound."
+                " But got other than these two. "
+            )
 
-        r3 = "sudo tc filter add dev {} protocol ip parent 1:0 prio 1 u32 " \
-             "match ip {} {}/32 match ip {} {}  0xffff flowid 1:1".format(interface, ip_param,
-                                                                          ip, port_param, port)
+        r3 = (
+            "sudo tc filter add dev {} protocol ip parent 1:0 prio 1 u32 "
+            "match ip {} {}/32 match ip {} {}  0xffff flowid 1:1".format(
+                interface, ip_param, ip, port_param, port
+            )
+        )
         clear_cmd = "sudo tc qdisc del dev {} root".format(interface)
         run_cmd_list = [r1, r2, r3]
         p = Distortion(run_cmd_list, clear_cmd, duration)
