@@ -1,27 +1,3 @@
-# -*- coding: utf-8 -*-
-
-# FLEDGE_BEGIN
-# See: http://fledge-iot.readthedocs.io/
-# FLEDGE_END
-
-""" Module for applying network impairments."""
-
-
-__author__ = "Deepanshu Yadav"
-__copyright__ = "Copyright (c) 2022 Dianomic Systems Inc."
-__license__ = "Apache 2.0"
-__version__ = "${VERSION}"
-
-# References
-# 1. http://myconfigure.blogspot.com/2012/03/traffic-shaping.html
-# 2. https://lartc.org/howto/lartc.qdisc.classful.html
-# 3. https://lartc.org/howto/lartc.qdisc.filters.html
-# 4. https://serverfault.com/a/841865
-# 5. https://serverfault.com/a/906499
-# 6. https://wiki.linuxfoundation.org/networking/netem
-# 7. https://srtlab.github.io/srt-cookbook/how-to-articles/using-netem-to-emulate-networks/
-# 8. https://wiki.linuxfoundation.org/networking/netem
-
 import subprocess
 import multiprocessing
 import datetime
@@ -30,7 +6,6 @@ import socket
 
 
 def check_for_interface(interface):
-    """Checks for given interface if present in output of ifconfig"""
     for tup in socket.if_nameindex():
         if tup[1] == interface:
             return True
@@ -71,7 +46,6 @@ class Distortion(multiprocessing.Process):
         return True
 
     def run(self) -> None:
-        # Make sure we are in clean state. Ignore error if there.
         _ = Distortion.run_command(self.clear_cmd)
 
         for run_cmd in self.run_cmd_list:
