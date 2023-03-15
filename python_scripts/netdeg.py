@@ -3,7 +3,7 @@ import multiprocessing
 import datetime
 import time
 import socket
-
+import argparse
 
 def check_for_interface(interface):
     for tup in socket.if_nameindex():
@@ -97,7 +97,7 @@ def reset_network(interface):
 
 
 def distort_network(
-    interface, duration, rate_limit, latency, ip=None, port=None, traffic=""
+    interface, duration, rate_limit, latency, ip=None, traffic=""
 ):
     """
 
@@ -115,9 +115,6 @@ def distort_network(
     :param ip: The ip of machine where packets are coming / leaving to filter. Keep None
                if no filter required.
     :type ip: string
-    :param port: The port of machine where packets are coming / leaving to filter.  Keep None
-               if no filter required.
-    :type port: integer
     :param rate_limit: The restriction in rate in kbps. Use value 20 for 20 kbps.
     :type rate_limit: integer
     :param latency: The delay to cause for every packet leaving/ coming from machine in
@@ -145,7 +142,7 @@ def distort_network(
     else:
         rate_limit_converted = None
 
-    if not (ip and port):
+    if not ip:
         if rate_limit_converted and latency_converted:
             run_cmd = "sudo tc qdisc add dev {} root netem" " delay {} rate {}".format(
                 interface, latency_converted, rate_limit_converted
@@ -189,11 +186,9 @@ def distort_network(
 
         if traffic.lower() == "outbound":
             ip_param = "dst"
-            port_param = "dport"
 
         elif traffic.lower() == "inbound":
             ip_param = "src"
-            port_param = "sport"
         else:
             raise Exception(
                 "For ip and port are given then traffic has to be either inbound or outbound."
@@ -202,26 +197,90 @@ def distort_network(
 
         r3 = (
             "sudo tc filter add dev {} protocol ip parent 1:0 prio 1 u32 "
-            "match ip {} {}/32 match ip {} {}  0xffff flowid 1:1".format(
-                interface, ip_param, ip, port_param, port
+            "match ip {} {}/32 flowid 1:1".format(
+                interface, ip_param, ip
             )
         )
         clear_cmd = "sudo tc qdisc del dev {} root".format(interface)
         run_cmd_list = [r1, r2, r3]
         p = Distortion(run_cmd_list, clear_cmd, duration)
         p.daemon = True
-        p.start()
+        p.run()
+
+epilog_string = """
+Example usage:
+
+With IP address - python3 netdeg.py --interface eth0 --traffic outbound --duration 10 --ip 10.34.2.240 --latency 500
+
+Without IP address - python3 netdeg.py --interface eth0 --duration 10 --latency 500
+
+Resetting state of the interface - python3 netdeg.py --reset (only if application was grafully stopped, otherwise cleanup is automatic after the duration)
+"""
+parser = argparse.ArgumentParser(
+    description="Tool for manipulating network parameters, namely latency and rate limit.",
+    epilog=epilog_string,
+    formatter_class=argparse.RawTextHelpFormatter)
+
+parser.add_argument(
+    "--interface",
+    dest="iface",
+    default="eth0",
+    type=str,
+    help="Network interface for distortion",
+)
+parser.add_argument(
+    "--ip",
+    dest="ip",
+    default=None,
+    type=str,
+    help="Distort only traffic directed to or from this ip address",
+)
+parser.add_argument(
+    "--rate",
+    dest="rate",
+    default=100,
+    type=int,
+    help="Distort bitrate (kbps)",
+)
+parser.add_argument(
+    "--latency",
+    dest="latency",
+    default=0,
+    type=int,
+    help="Distort latency (ms)",
+)
+parser.add_argument(
+    "--traffic",
+    dest="traffic",
+    default="outbound",
+    type=str,
+    help="Distort only inbound or outbound traffic",
+)
+parser.add_argument(
+    "--duration",
+    dest="duration",
+    type=int,
+    default=60,
+    help="Duration of distorsion (s)"
+)
+parser.add_argument(
+    '--reset',
+    dest="reset",
+    default=False,
+    action=argparse.BooleanOptionalAction
+)
 
 
-""" -------------------------Usage -------------------------------------"""
+def main():
+    args = parser.parse_args()
+    if not args.reset:
+        msg = f"""Distorting network with following parameters: \n \n interface: {args.iface} \n ip address: {args.ip} \n duration: {args.duration} \n traffic: {args.traffic} \n rate limit: {args.rate}kbps \n latency: {args.latency}ms"""
+        print(msg)
+        distort_network(interface=args.iface, duration=args.duration, rate_limit=args.rate, latency=args.latency, ip=args.ip, traffic=args.traffic)
+    else:
+        msg = f"Reseting network distorsions for interface {args.iface}"
+        print(msg)
+        reset_network(interface=args.iface)
 
-# from network_impairment import distort_network, reset_network
-# distort_network(interface="wlp2s0", duration=40, rate_limit=20, latency=300,
-#                 ip="192.168.1.80", port=8081, traffic="inbound")
-#
-# distort_network(interface="wlp2s0", duration=40, rate_limit=20, latency=300,
-#                 ip="192.168.1.80", port=8081, traffic="outbound")
-#
-# distort_network(interface="wlp2s0", duration=40, rate_limit=20, latency=300)
-
-# reset_network(interface="wlp2s0")
+if __name__ == "__main__":
+    main()
