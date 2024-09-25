@@ -170,6 +170,7 @@ docker exec $axess_container_name bash -c 'sed -i "s/^SERVICE_ENABLED=\"false\"/
 echo_color "Configuring grafana dashboards"
 docker exec $axess_container_name bash -c "/etc/init.d/openresty start"
 docker exec $axess_container_name bash -c "/etc/init.d/grafana-server start"
+sleep 1m
 docker exec $axess_container_name bash -c "/opt/axess/bin/configure_grafana"
 docker exec $axess_container_name bash -c "/etc/init.d/grafana-server stop"
 docker exec $axess_container_name bash -c "/etc/init.d/openresty stop"
