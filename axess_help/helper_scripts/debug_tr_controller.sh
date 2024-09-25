@@ -1,5 +1,5 @@
 #!/bin/sh
-/opt/tr069controller/.venv/bin/uwsgi --wsgi-file /opt/tr069controller/src/ax/tr069controller/tr069controller.py \
+/opt/tr069controller/bin/uwsgi --wsgi-file /opt/tr069controller/src/ax/tr069controller/tr069controller.py \
     --http :9675 \
     --http-keepalive \
     --uid axess \

@@ -1,2 +1,2 @@
 #!/bin/sh
-/opt/axess/.venv/bin/axess -s
+/opt/axess/bin/axess -s

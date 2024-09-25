@@ -1,5 +1,5 @@
 #!/bin/sh
-/opt/configcontroller/.venv/bin/uwsgi --wsgi-file /opt/configcontroller/src/ax/configcontroller/configcontroller.py \
+/opt/configcontroller/bin/uwsgi --wsgi-file /opt/configcontroller/src/ax/configcontroller/configcontroller.py \
     --http :9677 \
     --http-keepalive \
     --uid axess \
