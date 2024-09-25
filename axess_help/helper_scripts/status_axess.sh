@@ -3,7 +3,7 @@
 /etc/init.d/elasticsearch status
 /etc/init.d/collectd status
 /etc/init.d/axess status
-/etc/init.d/nginx status
+/etc/init.d/openresty status
 /etc/init.d/axess_northbound status
 /etc/init.d/ax.configcontroller status
 /etc/init.d/ax.tr069controller status

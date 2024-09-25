@@ -3,7 +3,7 @@
 /etc/init.d/elasticsearch start
 /etc/init.d/collectd start
 /etc/init.d/axess start
-/etc/init.d/nginx start
+/etc/init.d/openresty start
 /etc/init.d/axess_northbound start
 /etc/init.d/ax.configcontroller start
 /etc/init.d/ax.tr069controller start
