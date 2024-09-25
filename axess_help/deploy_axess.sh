@@ -162,10 +162,17 @@ docker exec $axess_container_name bash -c "git clone git@gitlab.axiros.com:axess
 docker exec $axess_container_name bash -c "cd /opt/configcontroller && ./common.sh init_dev"
 
 # QoL Improvements
-# 1. Change SERVICE_ENABLED in ax.graphite-web and configure grafana dashboards
+# 1a. Change SERVICE_ENABLED in ax.graphite-web
 echo_color "Updating /etc/default/ax.graphite-web..."
 docker exec $axess_container_name bash -c 'sed -i "s/^SERVICE_ENABLED=\"false\"/SERVICE_ENABLED=\"true\"/" /etc/default/ax.graphite-web'
+
+# 1b. Configure grafana dashboards
+echo_color "Configuring grafana dashboards"
+docker exec $axess_container_name bash -c "/etc/init.d/openresty start"
+docker exec $axess_container_name bash -c "/etc/init.d/grafana-server start"
 docker exec $axess_container_name bash -c "/opt/axess/bin/configure_grafana"
+docker exec $axess_container_name bash -c "/etc/init.d/grafana-server stop"
+docker exec $axess_container_name bash -c "/etc/init.d/openresty stop"
 
 # 2. Checkout tools repository
 echo_color "Checking out the tools repository..."
@@ -189,6 +196,11 @@ docker exec $axess_container_name bash -c "cp /opt/tools/axess_help/zshrc_update
 docker exec $axess_container_name bash -c "git clone https://github.com/zsh-users/zsh-autosuggestions \${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
 docker exec $axess_container_name bash -c "git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \${ZSH_CUSTOM:-\$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
 docker exec $axess_container_name bash -c "cp /opt/tools/axess_help/p10k.zsh ~/.p10k.zsh"
+
+# Cleanup
+echo_color "Cleanup..."
+rm Dockerfile
+docker exec $axess_container_name bash -c "rm -rf /opt/tools"
 
 # Summary of steps performed
 echo_color "AXESS setup complete! Here’s a summary of the steps performed:"
