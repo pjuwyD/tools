@@ -242,4 +242,3 @@ echo -e "ax_stop \033[0m| \033[1;32mStops all axess processes.\033[0m"
 echo -e "ax_status \033[0m| \033[1;32mDisplays the running status of all axess processes.\033[0m"
 
 echo_color "Setup completed successfully!"
-
