@@ -40,31 +40,9 @@ if [[ -z "$axess_container_name" || -z "$db_container_name" || -z "$network_name
   show_help
 fi
 
-# Function to safely add/update an entry in known_hosts
-function add_or_update_known_host() {
-    local host=$1
-    local known_hosts_file=~/.ssh/known_hosts
-    
-    # Check if the host exists in known_hosts and remove if found
-    if grep -q "$host" $known_hosts_file; then
-        echo_color "Updating known_hosts for $host"
-        # Remove the existing entry
-        grep -v "$host" $known_hosts_file > ${known_hosts_file}.tmp
-        mv ${known_hosts_file}.tmp $known_hosts_file
-    else
-        echo_color "Adding $host to known_hosts"
-    fi
-    
-    # Add the new entry from ssh-keyscan
-    ssh-keyscan $host >> $known_hosts_file
-}
-
 # Ensure the .ssh directory exists
 mkdir -p ~/.ssh
 
-# Add or update the hosts
-add_or_update_known_host "gitlab.axiros.com"
-add_or_update_known_host "git.axiros.com"
 
 # Step 1: Create Dockerfile for AXESS container
 echo_color "Creating Dockerfile for AXESS container..."
@@ -82,10 +60,15 @@ docker build -f Dockerfile -t $axess_container_name .
 echo_color "Running the AXESS container..."
 docker run -d --add-host artifacts-internal.axiros.com:$artifacts_ip --name $axess_container_name $axess_container_name
 
-# Step 4: Copy SSH key to AXESS container
+# Step 4: Copy SSH key to AXESS container and create known hosts
 echo_color "Copying SSH keys to AXESS container..."
 docker cp ~/.ssh/id_rsa $axess_container_name:/root/.ssh/id_rsa
-docker cp ~/.ssh/known_hosts $axess_container_name:/root/.ssh/known_hosts
+docker exec $axess_container_name bash -c '
+    touch /root/.ssh/known_hosts
+    ssh-keyscan gitlab.axiros.com >> /root/.ssh/known_hosts
+    ssh-keyscan git.axiros.com >> /root/.ssh/known_hosts
+    echo "Known hosts file generated and populated successfully in the AXESS container."
+'
 
 # Step 5: Create the Docker network
 echo_color "Creating the Docker network..."
@@ -170,7 +153,7 @@ docker exec $axess_container_name bash -c 'sed -i "s/^SERVICE_ENABLED=\"false\"/
 echo_color "Configuring grafana dashboards"
 docker exec $axess_container_name bash -c "/etc/init.d/openresty start"
 docker exec $axess_container_name bash -c "/etc/init.d/grafana-server start"
-sleep 1m
+sleep 60
 docker exec $axess_container_name bash -c "/opt/axess/bin/configure_grafana"
 docker exec $axess_container_name bash -c "/etc/init.d/grafana-server stop"
 docker exec $axess_container_name bash -c "/etc/init.d/openresty stop"
