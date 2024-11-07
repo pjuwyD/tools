@@ -1,0 +1,34 @@
+# Logging configuration
+logging:
+  enabled: true  # Set to false to disable logging
+  level: info    # Log level (info, debug, warning, error, critical)
+
+# Log Reader configuration
+log_reader:
+  batch_size: 100  # Number of records to batch before inserting into ClickHouse
+  watched_patterns:
+    - "/var/log/*.log"  # Log file patterns to watch
+  position_file:
+    path: "log_reader_positions.json"  # Path to position file, default is 'log_reader_positions.json'
+
+# ClickHouse configuration
+clickhouse:
+  host: "127.0.0.1"       # ClickHouse server hostname
+  port: 9000              # ClickHouse server port
+  database: "default"     # ClickHouse database
+  table: "logs_table"     # ClickHouse table name (must be provided)
+  
+  # Table columns configuration
+  table_columns:
+    - name: "logdatetime"
+      type: "DateTime"
+    - name: "message"
+      type: "String"
+    - name: "pid"
+      type: "UInt32"
+    - name: "thread"
+      type: "Float64"
+  arbitrary_data:
+    enabled: true
+    column: "arbitrary"
+
