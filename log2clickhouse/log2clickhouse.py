@@ -72,15 +72,20 @@ class LogHandler(FileSystemEventHandler):
 
     def process_log(self, log: Dict[str, Any]) -> Dict[str, Union[str, int, float, None]]:
         processed = {}
-        
+        used_keys = set()  # Track keys that are processed
+
         for column in self.table_columns:
             column_name = column['name']
             column_type = column.get('type', 'String')  # Default type is 'String'
+            column_mask = column.get('mask', '')  # Mask option
 
-            value = log.get(column_name, None)
+            # Use the mask if specified, otherwise default to column name
+            actual_key = column_mask or column_name
+            value = log.get(actual_key, None)
+            used_keys.add(actual_key)  # Mark this key as used
 
             if value is None:
-                # Apply default values based on type if necessary (can be expanded as needed)
+                # Apply default values based on type if necessary
                 if column_type == 'String':
                     processed[column_name] = ""
                 elif column_type in ['UInt32', 'Int32', 'Float32', 'Float64']:
@@ -116,7 +121,7 @@ class LogHandler(FileSystemEventHandler):
 
         # Handle arbitrary data - any key-value pairs not matching the table columns
         if self.store_arbitrary:
-            arbitrary_data = {k: v for k, v in log.items() if k not in [col['name'] for col in self.table_columns]}
+            arbitrary_data = {k: v for k, v in log.items() if k not in used_keys}
             processed[self.arbitrary_column] = json.dumps(arbitrary_data)
 
         return processed
@@ -149,16 +154,15 @@ def main(config):
         database=config.get('clickhouse', {}).get('database', 'default')
     )
     
-    # Ensure the table is mandatory
+    # Ensure the table and columns are mandatory
     if 'table' not in config.get('clickhouse', {}):
         logger.error("ClickHouse table is mandatory but not provided in the configuration.")
         exit(1)
-    # Ensure the table is mandatory
     if 'table_columns' not in config.get('clickhouse', {}):
         logger.error("ClickHouse table columns are mandatory but not provided in the configuration.")
         exit(1)
     
-    # Read table columns with name and type from config
+    # Read table columns with name, type, and optional mask from config
     table_columns = config['clickhouse'].get('table_columns', [])
     store_arbitrary = config['clickhouse'].get('arbitrary_data', {}).get("enabled", False)
     arbitrary_column = config['clickhouse'].get('arbitrary_data', {}).get("column", "arbitrary")

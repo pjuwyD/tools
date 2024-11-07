@@ -74,6 +74,7 @@ The configuration file allows you to specify various settings for the log reader
           type: "DateTime"
         - name: "message"
           type: "String"
+          mask: "event"
         - name: "pid"
           type: "UInt32"
         - name: "thread"
@@ -103,6 +104,7 @@ The configuration file allows you to specify various settings for the log reader
 Defines the columns in the ClickHouse table.
 - **name**: Column name in the table.
 - **type**: Data type of the column (e.g., `String`, `DateTime`, `UInt32`).
+- **mask**: Entry name in the log
 
 #### arbitrary_data
 Defines should the arbitrary data be stored and where should it be stored
