@@ -12,9 +12,9 @@ This script provides an efficient log reader that tailors log files, processes t
 ## Installation
 
 1. Clone the repository:
-   ```bash
-   git clone
-   ```
+```bash
+   git clone https://github.com/pjuwyD/tools.git
+```
 
 2. Install the required dependencies:
 
